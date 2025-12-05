@@ -4,12 +4,53 @@ import Modal from '../Components/Distribuidor/ModalGenerico.jsx';
 import ProductosTable from '../Components/Distribuidor/ProductosTable.jsx';
 import AmortizacionTable from '../Components/Distribuidor/AmortizacionTable.jsx';
 import CrearNotaForm from '../Components/Distribuidor/CrearNotaForm.jsx';
+import AmortizarModal from '../Components/Distribuidor/AmortizarModal.jsx';
 
 export default function Dashboard() {
     const [notas, setNotas] = useState([]);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [modalData, setModalData] = useState({ open: false, content: null, title: '' });
+    const [amortizarOpen, setAmortizarOpen] = useState(false);
+    const [selectedNota, setSelectedNota] = useState(null);
+
+    const getSaldoActual = (nota) => {
+    if (!nota.payments || nota.payments.length === 0) return parseFloat(nota.total);
+    const lastPayment = nota.payments[nota.payments.length - 1];
+    return parseFloat(lastPayment.new_balance);
+};
+
+const handleGuardarAmortizacion = async (data) => {
+    const saldoActual = getSaldoActual(selectedNota);
+    const previous_balance = saldoActual;
+    const new_balance = previous_balance - parseFloat(data.amount);
+
+    const payload = {
+        sales_note_id: selectedNota.id,
+        amount: parseFloat(data.amount),
+        previous_balance,
+        new_balance,
+        payment_date: new Date().toISOString().slice(0,10),
+        payment_type: "credito",
+        payment_method_id: data.payment_method_id,
+        notes: data.notes || ""
+    };
+
+    const res = await fetch("/payments/store", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(payload)
+    });
+     console.log("PAYLOAD DE AMORTIZACIÓN:", payload);
+    const nuevoPago = await res.json();
+
+    setNotas(notas.map(n => n.id === selectedNota.id ? { ...n, payments: [...n.payments, nuevoPago] } : n));
+
+    setAmortizarOpen(false);
+};
 
     useEffect(() => {
         fetch('/notas')
@@ -27,16 +68,16 @@ export default function Dashboard() {
     }, []);
 
     useEffect(() => {
-    const recargar = () => {
-        fetch('/notas')
-            .then(res => res.json())
-            .then(data => setNotas(data.notas));
-    };
+        const recargar = () => {
+            fetch('/notas')
+                .then(res => res.json())
+                .then(data => setNotas(data.notas));
+        };
 
-    window.addEventListener("notaCreada", recargar);
+        window.addEventListener("notaCreada", recargar);
 
-    return () => window.removeEventListener("notaCreada", recargar);
-}, []);
+        return () => window.removeEventListener("notaCreada", recargar);
+    }, []);
 
     const openModal = (nota) => {
         if (nota.payment_method.name === 'credito') {
@@ -48,7 +89,10 @@ export default function Dashboard() {
                         payments={nota.payments}
                         items={nota.items}
                         total={nota.total}
-                        onAmortizar={() => alert(`Amortizar deuda de la nota ${nota.note_number}`)}
+                        onAmortizar={() => {
+                            setSelectedNota(nota);  // Guardamos la nota que vamos a amortizar
+                            setAmortizarOpen(true);  // Abrimos el modal
+                        }}
                     />
                 )
             });
@@ -132,6 +176,15 @@ export default function Dashboard() {
             <Modal open={modalData.open} onClose={closeModal} title={modalData.title}>
                 {modalData.content}
             </Modal>
+            {selectedNota && (
+
+    <AmortizarModal
+        open={amortizarOpen}
+        onClose={() => setAmortizarOpen(false)}
+        onSave={handleGuardarAmortizacion}  // Función que guarda el pago
+        saldoActual={getSaldoActual(selectedNota)}
+    />
+)}
         </div>
     );
 }

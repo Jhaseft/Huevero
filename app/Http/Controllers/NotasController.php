@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SalesNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Client;
 
 class NotasController extends Controller
 {
@@ -62,6 +63,26 @@ class NotasController extends Controller
         ]);
     }
 
+
+    public function storeCliente(Request $request)
+{
+    $validated = $request->validate([
+        'name'    => 'required|string|max:255',
+        'phone'   => 'nullable|string|max:255',
+        'address' => 'nullable|string|max:255',
+    ]);
+
+    // Crear cliente (sin user_id porque tus clientes no lo usan)
+    $cliente = Client::create([
+        'name'    => $validated['name'],
+        'phone'   => $validated['phone'] ?? '',
+        'address' => $validated['address'] ?? '',
+        'user_id' => auth()->id() ?? null,
+    ]);
+
+    return response()->json($cliente);
+}
+
     public function datosFormulario()
     {
         $user = Auth::user();
@@ -73,4 +94,6 @@ class NotasController extends Controller
             'hoy' => now()->toDateString(),
         ]);
     }
+
+
 }

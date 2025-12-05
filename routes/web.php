@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminControllerDashboard;
 use App\Http\Controllers\NotasController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,8 +35,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Guardar nota vía fetch
     Route::post('/notas', [NotasController::class, 'store'])->name('notas.store.json');
 
+    Route::post('/payments/store', [PaymentController::class, 'store'])->name('payments.store.json');
+    Route::get('/metodos/datos-form', [PaymentController::class, 'datosFormulario']);
+    
     Route::get('/notas/datos-form', [NotasController::class, 'datosFormulario']);
-
+    Route::post('/clientes/store', [NotasController::class, 'storeCliente']);
 });
 
 Route::prefix('admin')->group(function () {

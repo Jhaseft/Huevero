@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import CrearClienteModal from "./CrearClienteModal.jsx";
 
 export default function CrearNotaForm({ onClose }) {
     const [clientes, setClientes] = useState([]);
@@ -18,7 +19,7 @@ export default function CrearNotaForm({ onClose }) {
 
     // Modales internos
     const [crearClienteOpen, setCrearClienteOpen] = useState(false);
-    const [crearMetodoOpen, setCrearMetodoOpen] = useState(false);
+
 
     useEffect(() => {
         fetch("/notas/datos-form")
@@ -30,7 +31,6 @@ export default function CrearNotaForm({ onClose }) {
                 setProductos(data.productos);
                 setMetodos(data.metodos);
 
-                // SOLO FECHA, YA NO SE PONE CÓDIGO
                 setForm(f => ({
                     ...f,
                     date: data.hoy
@@ -53,17 +53,32 @@ export default function CrearNotaForm({ onClose }) {
         setItems(items.filter((_, i) => i !== index));
     };
 
-    const crearCliente = (nuevoCliente) => {
+   const crearCliente = (nuevoCliente) => {
+        // incluir token CSRF por si usas Laravel y estás en sesión
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = { "Content-Type": "application/json" };
+        if (tokenMeta) headers["X-CSRF-TOKEN"] = tokenMeta.content;
+
         fetch("/clientes/store", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(nuevoCliente)
         })
-            .then(res => res.json())
+            .then(async res => {
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error("Error creando cliente: " + text);
+                }
+                return res.json();
+            })
             .then(c => {
-                setClientes([...clientes, c]);
-                setForm({ ...form, client_id: c.id });
+                setClientes(prev => [...prev, c]);
+                setForm(prev => ({ ...prev, client_id: c.id }));
                 setCrearClienteOpen(false);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("No se pudo crear el cliente.");
             });
     };
 
@@ -239,6 +254,13 @@ export default function CrearNotaForm({ onClose }) {
                     {loading ? "Guardando..." : "Crear Nota"}
                 </button>
             </div>
+
+             {crearClienteOpen && (
+            <CrearClienteModal
+                onClose={() => setCrearClienteOpen(false)}
+                onSave={crearCliente}
+            />
+        )}
         </div>
     );
 }
