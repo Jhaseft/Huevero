@@ -1,0 +1,137 @@
+import { useState, useEffect } from 'react';
+import { Head } from '@inertiajs/react';
+import Modal from '../Components/Distribuidor/ModalGenerico.jsx';
+import ProductosTable from '../Components/Distribuidor/ProductosTable.jsx';
+import AmortizacionTable from '../Components/Distribuidor/AmortizacionTable.jsx';
+import CrearNotaForm from '../Components/Distribuidor/CrearNotaForm.jsx';
+
+export default function Dashboard() {
+    const [notas, setNotas] = useState([]);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [modalData, setModalData] = useState({ open: false, content: null, title: '' });
+
+    useEffect(() => {
+        fetch('/notas')
+            .then(res => res.ok ? res.json() : Promise.reject(`HTTP error! status: ${res.status}`))
+            .then(data => {
+                console.log("JSON recibido de /notas:", data); // <-- aquí lo mostramos
+                setUser(data.user);
+                setNotas(data.notas);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error fetching notas:", err);
+                setLoading(false);
+            });
+    }, []);
+
+    useEffect(() => {
+    const recargar = () => {
+        fetch('/notas')
+            .then(res => res.json())
+            .then(data => setNotas(data.notas));
+    };
+
+    window.addEventListener("notaCreada", recargar);
+
+    return () => window.removeEventListener("notaCreada", recargar);
+}, []);
+
+    const openModal = (nota) => {
+        if (nota.payment_method.name === 'credito') {
+            setModalData({
+                open: true,
+                title: `Amortización - Nota ${nota.note_number}`,
+                content: (
+                    <AmortizacionTable
+                        payments={nota.payments}
+                        items={nota.items}
+                        total={nota.total}
+                        onAmortizar={() => alert(`Amortizar deuda de la nota ${nota.note_number}`)}
+                    />
+                )
+            });
+        } else {
+            setModalData({
+                open: true,
+                title: `Productos Vendidos - Nota ${nota.note_number}`,
+                content: <ProductosTable items={nota.items} total={nota.total} />
+            });
+        }
+    };
+    const closeModal = () => setModalData({ open: false, content: null, title: '' });
+
+    return (
+        <div className="container mx-auto p-4">
+            <Head title="Dashboard" />
+
+            {user && (
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h1 className="text-3xl font-bold text-gray-800">Bienvenido, {user.name}</h1>
+                    <button
+                        onClick={() =>
+                            setModalData({
+                                open: true,
+                                title: "Crear Nota de Venta",
+                                content: <CrearNotaForm onClose={() => setModalData({ open: false })} />
+                            })
+                        }
+                        className="bg-blue-500 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-600 transition duration-300"
+                    >
+                        Crear Nota
+                    </button>
+                </div>
+            )}
+
+            {loading ? (
+                <p className="text-gray-600">Cargando notas...</p>
+            ) : (
+                <div className="overflow-x-auto bg-white shadow rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-100">
+                            <tr>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Número de Nota</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Método de Pago</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {notas.length > 0 ? notas.map(nota => (
+                                <tr key={nota.id} className="hover:bg-gray-50 transition-colors duration-200">
+                                    <td className="px-4 py-3 text-sm text-gray-700">{nota.note_number}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{nota.client?.name}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{nota.date}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{nota.total}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{nota.payment_method.name}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                        <button
+                                            onClick={() => openModal(nota)}
+                                            className={nota.payment_method.name === 'credito'
+                                                ? "bg-yellow-400 text-white px-3 py-1 rounded hover:bg-yellow-500 transition"
+                                                : "bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition"
+                                            }
+                                        >
+                                            {nota.payment_method.name === 'credito' ? 'Amortización' : 'Ver Productos'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="6" className="px-4 py-3 text-center text-gray-500">No tienes notas aún</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            <Modal open={modalData.open} onClose={closeModal} title={modalData.title}>
+                {modalData.content}
+            </Modal>
+        </div>
+    );
+}
