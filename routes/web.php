@@ -53,7 +53,7 @@ Route::prefix('admin')->group(function () {
 
     Route::middleware('auth:admin')->group(function () {
         // Dashboard admin renderizar pagina admin
-        Route::get('/dashboard', [AdminControllerDashboard::class, 'index']);
+        Route::get('/dashboard', [AdminControllerDashboard::class, 'index'])->name('admin.dashboard');
         // Rutas para la gestión de usuarios
         Route::get('/usuarios', [UserController::class, 'index'])->name('usuarios.index');
         Route::put('/usuarios/{user}', [UserController::class, 'update'])->name('usuarios.update');
