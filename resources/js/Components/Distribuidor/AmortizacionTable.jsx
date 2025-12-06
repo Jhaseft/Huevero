@@ -9,7 +9,7 @@ export default function AmortizacionTable({ payments, items, total, onAmortizar 
     const hasDebt = !lastPayment || parseFloat(lastPayment.new_balance) > 0;
 
     return (
-        <div className="space-y-6">
+        <div className=" space-y-6 max-h-[75vh] overflow-y-auto">
             {/* Pagos realizados */}
             <div className="overflow-x-auto">
                 <h4 className="text-lg font-semibold mb-2">Pagos realizados</h4>

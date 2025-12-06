@@ -1,13 +1,17 @@
-// resources/js/Pages/Admin/AdminDashboard.jsx
 import { useRef } from "react";
 import { motion } from "framer-motion";
 import { Head, Link } from "@inertiajs/react";
 import AdminHeader from "@/Components/admin/AdminHeader.jsx";
+import Usuarios from "@/Components/admin/Usuarios.jsx";
+import Productos from "@/Components/admin/Productos.jsx";
+import Reportes from "@/Components/admin/Reportes.jsx";
+import Notas from "@/Components/admin/Notas.jsx"; // <-- Importa tu componente Notas
 
-export default function AdminDashboard({ categories = [] }) {
+export default function AdminDashboard() {
   const section1Ref = useRef(null);
   const section2Ref = useRef(null);
   const section3Ref = useRef(null);
+  const section4Ref = useRef(null); // <-- Nuevo ref para Notas
 
   const handleLogout = () => {
     window.location.href = "/logout";
@@ -35,19 +39,19 @@ export default function AdminDashboard({ categories = [] }) {
         </motion.h1>
 
         {/* Botones */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 w-full max-w-4xl">
-          <Link
-            href={route('register')} 
-            className="px-6 py-4 bg-white rounded-2xl shadow-lg text-base sm:text-lg font-semibold text-gray-800 hover:bg-pink-100 transition w-full inline-block text-center"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 w-full max-w-4xl">
+          <button
+            onClick={() => scrollToSection(section1Ref)}
+            className="px-6 py-4 bg-white rounded-2xl shadow-lg text-base sm:text-lg font-semibold text-gray-800 hover:bg-yellow-100 transition w-full"
           >
             Usuarios
-          </Link>
+          </button>
 
           <button
             onClick={() => scrollToSection(section2Ref)}
             className="px-6 py-4 bg-white rounded-2xl shadow-lg text-base sm:text-lg font-semibold text-gray-800 hover:bg-yellow-100 transition w-full"
           >
-            Órdenes
+            Productos
           </button>
 
           <button
@@ -56,20 +60,30 @@ export default function AdminDashboard({ categories = [] }) {
           >
             Reportes
           </button>
+
+          <button
+            onClick={() => scrollToSection(section4Ref)}
+            className="px-6 py-4 bg-white rounded-2xl shadow-lg text-base sm:text-lg font-semibold text-gray-800 hover:bg-green-100 transition w-full"
+          >
+            Notas
+          </button>
         </div>
       </section>
 
-
       <section ref={section1Ref} className="min-h-screen flex justify-center items-center px-4">
-
+        <Usuarios />
       </section>
 
       <section ref={section2Ref} className="min-h-screen flex justify-center items-center px-4">
-
+        <Productos />
       </section>
 
       <section ref={section3Ref} className="min-h-screen flex justify-center items-center px-4">
+        <Reportes />
+      </section>
 
+      <section ref={section4Ref} className="min-h-screen flex justify-center items-center px-4">
+        <Notas /> 
       </section>
 
     </div>

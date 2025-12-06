@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import CrearClienteModal from "./CrearClienteModal.jsx";
-
+import ItemsProducto from "./ItemsProducto.jsx";
 export default function CrearNotaForm({ onClose }) {
     const [clientes, setClientes] = useState([]);
     const [productos, setProductos] = useState([]);
@@ -53,85 +53,90 @@ export default function CrearNotaForm({ onClose }) {
         setItems(items.filter((_, i) => i !== index));
     };
 
-   const crearCliente = (nuevoCliente) => {
-        // incluir token CSRF por si usas Laravel y estás en sesión
-        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-        const headers = { "Content-Type": "application/json" };
-        if (tokenMeta) headers["X-CSRF-TOKEN"] = tokenMeta.content;
+    const crearCliente = async (nuevoCliente) => {
+        try {
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            const headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            };
+            if (tokenMeta) headers["X-CSRF-TOKEN"] = tokenMeta.content;
 
-        fetch("/clientes/store", {
-            method: "POST",
-            headers,
-            body: JSON.stringify(nuevoCliente)
-        })
-            .then(async res => {
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error("Error creando cliente: " + text);
-                }
-                return res.json();
-            })
-            .then(c => {
-                setClientes(prev => [...prev, c]);
-                setForm(prev => ({ ...prev, client_id: c.id }));
-                setCrearClienteOpen(false);
-            })
-            .catch(err => {
-                console.error(err);
-                alert("No se pudo crear el cliente.");
+            const res = await fetch("/clientes/store", {
+                method: "POST",
+                headers,
+                credentials: "same-origin",
+                body: JSON.stringify(nuevoCliente),
             });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error("Error creando cliente: " + text);
+            }
+
+            const c = await res.json();
+            setClientes(prev => [...prev, c]);
+            setForm(prev => ({ ...prev, client_id: c.id }));
+            setCrearClienteOpen(false);
+        } catch (err) {
+            console.error(err);
+            alert("No se pudo crear el cliente.");
+        }
     };
 
+
     const guardarNota = async () => {
-    try {
-        setLoading(true);
+        try {
+            setLoading(true);
 
-        const total = items.reduce((sum, i) => {
-            const p = productos.find(p => p.id == i.product_id);
-            return sum + (p.unit_price * i.quantity);
-        }, 0);
+            const total = items.reduce((sum, i) => {
+                const p = productos.find(p => p.id == i.product_id);
+                return sum + (p.unit_price * i.quantity);
+            }, 0);
 
-        const payload = {
-            ...form,
-            total,
-            items,
-        };
+            const payload = {
+                ...form,
+                total,
+                items,
+            };
 
-        console.log("Payload enviado:", payload);
+            console.log("Payload enviado:", payload);
 
-        const res = await fetch("/notas", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify(payload),
-        });
+            const res = await fetch("/notas", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",                    
+                    "Accept": "application/json",                            
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content, 
+                },
+                credentials: "same-origin",                                
+                body: JSON.stringify(payload),
+            });
 
-        if (!res.ok) {
-            throw new Error("Error al guardar la nota");
+            if (!res.ok) {
+                throw new Error("Error al guardar la nota");
+            }
+
+            const nuevaNota = await res.json(); // <-- Backend devuelve la nota creada
+            console.log("Nota creada:", nuevaNota);
+
+            // Cerrar modal
+            onClose();
+
+            // 🔄 Recargar automáticamente las notas en el Dashboard
+            window.dispatchEvent(new Event("notaCreada"));
+
+        } catch (e) {
+            console.error(e);
+            alert("Hubo un error al guardar la nota.");
+        } finally {
+            setLoading(false);
         }
-
-        const nuevaNota = await res.json(); // <-- Backend devuelve la nota creada
-        console.log("Nota creada:", nuevaNota);
-
-        // Cerrar modal
-        onClose();
-
-        // 🔄 Recargar automáticamente las notas en el Dashboard
-        window.dispatchEvent(new Event("notaCreada"));
-
-    } catch (e) {
-        console.error(e);
-        alert("Hubo un error al guardar la nota.");
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
 
     return (
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto">
 
             {/* CLIENTE */}
             <div>
@@ -195,47 +200,12 @@ export default function CrearNotaForm({ onClose }) {
                 />
             </div>
 
-            {/* ITEMS */}
-            <div>
-                <label className="font-semibold">Productos</label>
+            <ItemsProducto
+                productos={productos}
+                items={items}
+                setItems={setItems}
+            />
 
-                {items.map((item, i) => (
-                    <div key={i} className="flex gap-2 mb-2">
-                        <select
-                            className="border p-2 rounded w-2/3"
-                            value={item.product_id}
-                            onChange={e => updateItem(i, "product_id", e.target.value)}
-                        >
-                            <option value="">Producto...</option>
-                            {productos.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
-                        </select>
-
-                        <input
-                            type="number"
-                            min="1"
-                            className="border p-2 rounded w-1/3"
-                            value={item.quantity}
-                            onChange={e => updateItem(i, "quantity", e.target.value)}
-                        />
-
-                        <button
-                            className="bg-red-500 text-white px-2 rounded"
-                            onClick={() => removeItem(i)}
-                        >
-                            X
-                        </button>
-                    </div>
-                ))}
-
-                <button
-                    className="bg-blue-500 text-white px-3 py-1 rounded"
-                    onClick={addItem}
-                >
-                    + Agregar Producto
-                </button>
-            </div>
 
             {/* BOTONES */}
             <div className="flex justify-end gap-3 mt-6">
@@ -255,12 +225,12 @@ export default function CrearNotaForm({ onClose }) {
                 </button>
             </div>
 
-             {crearClienteOpen && (
-            <CrearClienteModal
-                onClose={() => setCrearClienteOpen(false)}
-                onSave={crearCliente}
-            />
-        )}
+            {crearClienteOpen && (
+                <CrearClienteModal
+                    onClose={() => setCrearClienteOpen(false)}
+                    onSave={crearCliente}
+                />
+            )}
         </div>
     );
 }

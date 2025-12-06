@@ -1,6 +1,7 @@
 import { LogOut, Shield } from "lucide-react";
 
 export default function AdminHeader() {
+  
   const handleLogout = async () => {
     const token = document.querySelector('meta[name="csrf-token"]').content;
 
