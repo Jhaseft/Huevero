@@ -25,8 +25,6 @@ export default function CrearNotaForm({ onClose }) {
         fetch("/notas/datos-form")
             .then(res => res.json())
             .then(data => {
-                console.log("JSON recibido de backend:", data);
-
                 setClientes(data.clientes);
                 setProductos(data.productos);
                 setMetodos(data.metodos);
@@ -100,7 +98,7 @@ export default function CrearNotaForm({ onClose }) {
                 items,
             };
 
-            console.log("Payload enviado:", payload);
+
 
             const res = await fetch("/notas", {
                 method: "POST",
@@ -118,7 +116,7 @@ export default function CrearNotaForm({ onClose }) {
             }
 
             const nuevaNota = await res.json(); // <-- Backend devuelve la nota creada
-            console.log("Nota creada:", nuevaNota);
+
 
             // Cerrar modal
             onClose();
