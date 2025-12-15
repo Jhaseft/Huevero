@@ -82,7 +82,7 @@ export default function Usuarios() {
 
   return (
     <div className="w-full max-w-7xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-xl">
-      <h2 className="text-3xl font-bold mb-2 text-gray-800">Gestión de Usuarios</h2>
+      <h2 className="text-3xl font-bold mb-2 text-gray-800">Gestión de Ruteros</h2>
       <p className="text-gray-600 mb-6">Aquí podrás ver, editar y activar/desactivar usuarios.</p>
 
       <div className="flex flex-col md:flex-row md:justify-between mb-6 gap-4">

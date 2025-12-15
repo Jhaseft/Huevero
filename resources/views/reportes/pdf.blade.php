@@ -4,97 +4,156 @@
     <meta charset="utf-8">
     <title>{{ $titulo }}</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-        th { background: #f0f0f0; }
-        h2, h3 { margin-bottom: 5px; margin-top: 10px; }
-        .total { font-weight: bold; }
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .header {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .header td {
+            border: none;
+            padding: 4px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        tfoot td {
+            font-weight: bold;
+            background: #e0e0e0;
+        }
     </style>
 </head>
 <body>
-    <!-- DATOS GENERALES -->
-    <h2>{{ $titulo }}</h2>
-    <p><strong>Fecha:</strong> {{ $fecha }}</p>
-    <h3>Resumen General</h3>
-    <table>
+
+@foreach($usuarios as $usuarioData)
+
+    <!-- ENCABEZADO HORIZONTAL -->
+    <table class="header">
         <tr>
-            <th>Total Vendido</th>
-            <th>Total Deuda</th>
-        </tr>
-        <tr>
-            <td>{{ number_format($resumen_general['total_vendido'], 2) }}</td>
-            <td>{{ number_format($resumen_general['total_deuda'], 2) }}</td>
+            <td>Fecha: {{ $fecha }}</td>
+            <td>Rutero: {{ $usuarioData['usuario'] }}</td>
         </tr>
     </table>
-    @foreach($usuarios as $usuarioData)
-        <h3>Usuario: {{ $usuarioData['usuario'] }}</h3>
-        <p><strong>Total vendido:</strong> {{ number_format($usuarioData['total_vendido'], 2) }} | 
-           <strong>Total deuda:</strong> {{ number_format($usuarioData['total_deuda'], 2) }}</p>
 
-        @foreach($usuarioData['notas'] as $nota)
-            <table>
-                <tr>
-                    <th>Nota</th>
-                    <th>Cliente</th>
-                    <th>Método Pago</th>
-                    <th>Total Nota</th>
-                    @if(isset($nota['pagado']))
-                        <th>Pagado</th>
-                        <th>Deuda</th>
-                    @endif
-                </tr>
-                <tr>
-                    <td>{{ $nota['nota'] }}</td>
-                    <td>{{ $nota['cliente'] }}</td>
-                    <td>{{ $nota['metodo_pago_nota'] }}</td>
-                    <td>{{ number_format($nota['total_nota'], 2) }}</td>
-                    @if(isset($nota['pagado']))
-                        <td>{{ number_format($nota['pagado'], 2) }}</td>
-                        <td>{{ number_format($nota['deuda'], 2) }}</td>
-                    @endif
-                </tr>
-            </table>
+    <!-- TABLA DINÁMICA -->
+    <table>
+        <thead>
+            <tr>
+                <th>N°</th>
+                <th>Cliente</th>
+                <th>N° Nota</th>
 
-            <!-- TABLA DE PRODUCTOS CON PRECIO UNITARIO -->
-            <table>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Precio Unitario</th>
-                    <th>Subtotal</th>
-                </tr>
-                @foreach($nota['items'] as $item)
-                <tr>
-                    <td>{{ $item['producto'] }}</td>
-                    <td>{{ $item['cantidad'] }}</td>
-                    <td>{{ number_format($item['precio_unitario'] ?? 0, 2) }}</td>
-                    <td>{{ number_format($item['subtotal'], 2) }}</td>
-                </tr>
+                <!-- COLUMNAS DE PRODUCTOS -->
+                @foreach($productos as $producto)
+                    <th>{{ $producto }}</th>
                 @endforeach
-            </table>
 
-            @if(isset($nota['pagos']) && count($nota['pagos']) > 0)
-                <table>
-                    <tr>
-                        <th>Pagos</th>
-                        <th>Monto</th>
-                        <th>Método Pago</th>
-                        <th>Fecha</th>
-                    </tr>
-                    @foreach($nota['pagos'] as $pago)
-                    <tr>
-                        <td></td>
-                        <td>{{ number_format($pago['monto'], 2) }}</td>
-                        <td>{{ $pago['metodo_pago'] }}</td>
-                        <td>{{ $pago['fecha'] }}</td>
-                    </tr>
+                <!-- MÉTODOS DE PAGO -->
+                @foreach($metodos_pago as $metodo)
+                    <th>{{ $metodo }}</th>
+                @endforeach
+
+                <!-- COLUMNA DE DEUDA -->
+                <th>Deuda</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @php
+                $contador = 1;
+
+                // Inicializar totales
+                $totalesProductos = array_fill_keys($productos->toArray(), 0);
+                $totalesPagos = array_fill_keys($metodos_pago->toArray(), 0);
+                $totalDeuda = 0;
+            @endphp
+
+            @foreach($usuarioData['notas'] as $nota)
+                <tr>
+                    <td>{{ $contador }}</td>
+                    <td>{{ $nota['cliente'] }}</td>
+                    <td>{{ $nota['nota'] }}</td>
+
+                    <!-- PRODUCTOS -->
+                    @foreach($productos as $producto)
+                        @php
+                            $valor = $nota['productos'][$producto] ?? 0;
+                            $totalesProductos[$producto] += $valor;
+                        @endphp
+                        <td>{{ $valor }}</td>
                     @endforeach
-                </table>
-            @endif
-        @endforeach
-        <hr>
-    @endforeach
+
+                    <!-- MÉTODOS DE PAGO -->
+                    @foreach($metodos_pago as $metodo)
+                        @php
+                            $valorPago = $nota['metodos_pago'][$metodo] ?? 0;
+                            $totalesPagos[$metodo] += $valorPago;
+                        @endphp
+                        <td>{{ $valorPago }}</td>
+                    @endforeach
+
+                    <!-- DEUDA -->
+                    @php $totalDeuda += $nota['deuda'] ?? 0; @endphp
+                    <td>{{ $nota['deuda'] ?? 0 }}</td>
+                </tr>
+                @php $contador++; @endphp
+            @endforeach
+        </tbody>
+
+        <tfoot>
+            <tr>
+                <td colspan="3">Totales</td>
+
+                <!-- Totales productos -->
+                @foreach($totalesProductos as $total)
+                    <td>{{ $total }}</td>
+                @endforeach
+
+                <!-- Totales métodos de pago -->
+                @foreach($totalesPagos as $total)
+                    <td>{{ $total }}</td>
+                @endforeach
+
+                <!-- Total deuda -->
+                <td>{{ $totalDeuda }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    @if(!$loop->last)
+        <div class="page-break"></div>
+    @endif
+
+@endforeach
 
 </body>
 </html>
