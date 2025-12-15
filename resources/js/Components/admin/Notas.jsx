@@ -8,23 +8,26 @@ export default function Notas() {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-  const fetchNotas = async (pageNumber = 1, searchTerm = "") => {
+  const fetchNotas = async (pageNumber = 1, searchTerm = "", start = "", end = "") => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/admin/notas?search=${encodeURIComponent(searchTerm)}&page=${pageNumber}`,
-        {
-          headers: { "Accept": "application/json", "X-CSRF-TOKEN": csrfToken },
-        },
-        { credentials: "same-origin",
+      const params = new URLSearchParams();
+      if (searchTerm) params.append("search", searchTerm);
+      if (start) params.append("start_date", start);
+      if (end) params.append("end_date", end);
+      params.append("page", pageNumber);
 
-        }
-      );
+      const res = await fetch(`/admin/notas?${params.toString()}`, {
+        headers: { "Accept": "application/json", "X-CSRF-TOKEN": csrfToken },
+      });
       const data = await res.json();
-      setNotas(data.data);           // Laravel paginator: data
+      console.log("notas", data);
+      setNotas(data.data);
       setPage(data.current_page);
       setLastPage(data.last_page);
     } catch (error) {
@@ -33,6 +36,7 @@ export default function Notas() {
       setLoading(false);
     }
   };
+
 
   const openModal = (nota) => setNotaSelected(nota);
 
@@ -43,10 +47,11 @@ export default function Notas() {
         method: "DELETE",
         headers: { "X-CSRF-TOKEN": csrfToken },
       },
-        { credentials: "same-origin",
-            
+        {
+          credentials: "same-origin",
+
         }
-    );
+      );
       setNotas(notas.filter((n) => n.id !== id));
     } catch (error) {
       console.error(error);
@@ -55,9 +60,8 @@ export default function Notas() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchNotas(1, search);
+    fetchNotas(1, search, startDate, endDate);
   };
-
   useEffect(() => {
     fetchNotas(page, search);
   }, []);
@@ -68,19 +72,49 @@ export default function Notas() {
         Notas
       </h1>
 
-      {/* Buscador */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-4 flex-wrap">
-        <input
-          type="text"
-          placeholder="Buscar por ID, cliente o usuario"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg px-4 py-2 flex-1 min-w-[200px]"
-        />
-        <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-          Buscar
-        </button>
+
+      <form onSubmit={handleSearch} className="flex flex-wrap gap-4 items-end mb-4">
+
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-sm font-medium mb-1">Buscar</label>
+          <input
+            type="text"
+            placeholder="ID, cliente o usuario"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full border rounded-lg px-4 py-2"
+          />
+        </div>
+
+
+        <div className="flex-1 min-w-[150px]">
+          <label className="block text-sm font-medium mb-1">Fecha inicio</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full border rounded-lg px-4 py-2"
+          />
+        </div>
+
+
+        <div className="flex-1 min-w-[150px]">
+          <label className="block text-sm font-medium mb-1">Fecha fin</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full border rounded-lg px-4 py-2"
+          />
+        </div>
+
+        <div>
+          <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg w-full sm:w-auto">
+            Buscar
+          </button>
+        </div>
       </form>
+
 
       {loading ? (
         <p className="text-center py-4 text-gray-500">Cargando notas...</p>
@@ -100,37 +134,44 @@ export default function Notas() {
                 </tr>
               </thead>
               <tbody>
-                {notas.map((nota) => (
-                  <tr key={nota.id} className="text-center hover:bg-gray-50">
-                    <td className="p-2 border">{nota.note_number}</td>
-                    <td className="p-2 border">{nota.client.user.name}</td>
-                    <td className="p-2 border">{nota.client.name}</td>
-                    <td className="p-2 border">{nota.date}</td>
-                    <td className="p-2 border">{nota.total}</td>
-                    <td className="p-2 border">{nota.payment_method.name}</td>
-                    <td className="p-2 border flex flex-col sm:flex-row justify-center gap-2">
-                      <button
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-600 transition w-full sm:w-auto"
-                        onClick={() => openModal(nota)}
-                      >
-                        {nota.payment_method.type === "credito"
-                          ? "Ver Productos / Deuda"
-                          : "Ver Productos"}
-                      </button>
-                      <button
-                        className="bg-red-500 text-white px-3 py-1 rounded text-xs sm:text-sm hover:bg-red-600 transition w-full sm:w-auto"
-                        onClick={() => eliminarNota(nota.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {notas?.length > 0 ? (
+                  notas.map((nota) => (
+                    <tr key={nota.id} className="text-center hover:bg-gray-50">
+                      <td className="p-2 border">{nota.note_number}</td>
+                      <td className="p-2 border">{nota.client.user.name}</td>
+                      <td className="p-2 border">{nota.client.name}</td>
+                      <td className="p-2 border">{nota.date}</td>
+                      <td className="p-2 border">{nota.total}</td>
+                      <td className="p-2 border">{nota.payment_method.name}</td>
+                      <td className="p-2 border flex flex-col sm:flex-row justify-center gap-2">
+                        <button
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-600 transition w-full sm:w-auto"
+                          onClick={() => openModal(nota)}
+                        >
+                          {nota.payment_method.type === "credito"
+                            ? "Ver Productos / Deuda"
+                            : "Ver Productos"}
+                        </button>
+                        <button
+                          className="bg-red-500 text-white px-3 py-1 rounded text-xs sm:text-sm hover:bg-red-600 transition w-full sm:w-auto"
+                          onClick={() => eliminarNota(nota.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (<tr>
+                  <td colSpan="7" className="text-center p-4 text-gray-500">
+                    No hay notas disponibles
+                  </td>
+                </tr>
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* Paginación */}
+
           <div className="flex justify-center items-center gap-2 mt-4 flex-wrap">
             <button
               disabled={page <= 1}
@@ -151,7 +192,6 @@ export default function Notas() {
         </>
       )}
 
-      {/* Modal combinado */}
       {notaSelected && (
         <NotaModal nota={notaSelected} onClose={() => setNotaSelected(null)} />
       )}

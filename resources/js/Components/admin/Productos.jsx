@@ -151,7 +151,7 @@ export default function Productos() {
             <thead className="bg-gray-100 text-gray-700">
               <tr>
                 <th className="px-3 sm:px-4 py-2 border">ID</th>
-                <th className="px-3 sm:px-4 py-2 border">Nombre</th>
+                <th className="px-3 sm:px-4 py-2 border">Tamaño</th>
                 <th className="px-3 sm:px-4 py-2 border">Categoría</th>
                 <th className="px-3 sm:px-4 py-2 border">Precio</th>
                 <th className="px-3 sm:px-4 py-2 border">Estado</th>

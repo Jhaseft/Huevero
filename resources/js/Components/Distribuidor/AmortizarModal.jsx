@@ -7,17 +7,22 @@ export default function AmortizarModal({ open, onClose, onSave, saldoActual }) {
     const [metodos, setMetodos] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (!open) return;
+   useEffect(() => {
+    if (!open) return;
 
-        fetch("/metodos/datos-form")
-            .then(res => res.ok ? res.json() : Promise.reject("Error en backend"))
-            .then(data => setMetodos(data.metodos || []))
-            .catch(err => {
-                console.error("Error al obtener métodos de pago:", err);
-                setMetodos([]);
-            });
-    }, [open]);
+    fetch("/metodos/datos-form")
+        .then(res => res.ok ? res.json() : Promise.reject("Error en backend"))
+        .then(data => {
+            // Filtrar solo los métodos de tipo 'contado'
+            const metodosContado = (data.metodos || []).filter(m => m.type === 'contado');
+            setMetodos(metodosContado);
+        })
+        .catch(err => {
+            console.error("Error al obtener métodos de pago:", err);
+            setMetodos([]);
+        });
+}, [open]);
+   
 
     const handleSubmit = async () => {
         if (!amount) return alert("Ingrese un monto");

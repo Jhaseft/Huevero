@@ -56,7 +56,7 @@ class NotasController extends Controller
                 'total'         => \App\Models\Product::find($item['product_id'])->unit_price * $item['quantity']
             ]);
         }
-
+ 
         return response()->json([
             'success' => true,
             'nota' => $nota

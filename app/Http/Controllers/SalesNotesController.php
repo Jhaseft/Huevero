@@ -6,10 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\SalesNote;
 
 class SalesNotesController extends Controller
-{
-    public function index(Request $request)
+{ 
+   public function index(Request $request)
 {
     $search = $request->query('search'); // Valor de búsqueda
+    $startDate = $request->query('start_date'); // Fecha inicio
+    $endDate = $request->query('end_date'); // Fecha fin
     $perPage = 10; // Número de registros por página
 
     $query = SalesNote::with(['client.user', 'items.product', 'payments.paymentMethod', 'paymentMethod'])
@@ -25,11 +27,19 @@ class SalesNotesController extends Controller
         });
     }
 
+    // Filtrado por rango de fechas
+    if ($startDate && $endDate) {
+        $query->whereBetween('date', [$startDate, $endDate]);
+    } elseif ($startDate) {
+        $query->where('date', '>=', $startDate);
+    } elseif ($endDate) {
+        $query->where('date', '<=', $endDate);
+    }
+
     $notas = $query->paginate($perPage);
 
     return response()->json($notas);
 }
-
    
 
     public function destroy(SalesNote $nota)

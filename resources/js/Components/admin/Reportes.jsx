@@ -12,7 +12,7 @@ export default function Reportes() {
 
     const url = `/admin/reportes/${tipo}/pdf?date=${fecha}`;
 
-    window.open(url, "_blank"); // 🔥 descarga directa
+    window.open(url, "_blank"); 
   };
 
   return (

@@ -124,7 +124,6 @@ export default function Dashboard() {
                             onClick={() =>
                                 setModalData({
                                     open: true,
-                                    title: "Crear Nota de Venta",
                                     content: <CrearNotaForm onClose={() => setModalData({ open: false })} />
                                 })
                             }

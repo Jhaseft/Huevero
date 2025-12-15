@@ -64,8 +64,7 @@ Route::prefix('admin')->group(function () {
         Route::put('/productos/{product}', [ProductController::class, 'update'])->name('productos.update');
         Route::patch('/productos/{product}/toggle', [ProductController::class, 'toggleActive'])->name('productos.toggle');
         //reportes
-         // Reporte JSON
-        Route::get('/reportes/diario', [ReportController::class, 'daily'])->name('reportes.diario');
+
         // ESTE ES EL PDF LISTO
         Route::get('/reportes/{tipo}/pdf', [ReportController::class, 'generarPDF'])
             ->name('reportes.pdf');
